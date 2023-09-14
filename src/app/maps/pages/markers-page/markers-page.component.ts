@@ -6,6 +6,11 @@ interface MarkerAndColor {
   color: string
 }
 
+interface PlainMarker {
+  color: string,
+  lngLat: number[] // tb podriamos poner [number, number]
+}
+
 @Component({
   templateUrl: './markers-page.component.html',
   styleUrls: ['./markers-page.component.css']
@@ -33,6 +38,8 @@ export class MarkersPageComponent {
 
       zoom: 13, // starting zoom
     });
+
+    this.readFromLocalStorage();
 
     // const markerHTML = document.createElement("div");
     // markerHTML.innerHTML = "Daniel Sánchez";
@@ -68,6 +75,12 @@ export class MarkersPageComponent {
       .addTo(this.map);
 
     this.markers.push( {marker, color} );
+    this.saveToLocalStorage();
+
+    marker.on("dragend", () => {
+      this.saveToLocalStorage();
+      // console.log(marker.getLngLat());
+    } );
   }
 
   deleteMarker( index: number ) {
@@ -84,6 +97,51 @@ export class MarkersPageComponent {
       zoom: 14,
       center: marker.getLngLat()
     })
+  }
+
+  saveToLocalStorage() {
+
+    // const plainMarkers: PlainMarkers[] = this.markers.map( coloredMarker => {
+
+    //   color: coloredMarker.color;
+    //   lngLat: coloredMarker.marker.getLngLat().toArray()
+    // } );
+
+    if (!this.markers || this.markers.length === 0) return;
+
+    const plainMarkers: PlainMarker[] = this.markers.map( ({ color, marker }) => {
+
+    return {
+      color: color,
+      lngLat: marker.getLngLat().toArray()
+    }
+    });
+
+    // console.log(plainMarkers);
+    localStorage.setItem( "plainMarkers", JSON.stringify( plainMarkers ) );
+
+  }
+
+  readFromLocalStorage() {
+
+    const plainMarkersString = localStorage.getItem("plainMarkers") ?? "[]";
+    // console.log(plainMarkersString);
+    const plainMarkers: PlainMarker[] = JSON.parse( plainMarkersString );
+    // console.log(plainMarkers);
+    plainMarkers.forEach( ({ lngLat, color }) => {
+
+      const [ lng, lat] = lngLat;
+      const coords = new LngLat( lng, lat );
+      console.log(coords);
+
+      this.addMarker( coords, color )
+    }
+
+    // por qué no así?
+    // plainMarkers.forEach( ({ lngLat, color }) => {
+    //   this.addMarker( ({ lngLat, color }) );
+    // })
+    );
   }
 
 }
